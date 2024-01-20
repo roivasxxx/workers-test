@@ -1,0 +1,56 @@
+<script>
+    let messages = []
+    window.onmessage = (evt) => {
+        console.log('window msg')
+        messages.push(evt)
+    }
+
+    let sw = null
+    let scope = ''
+
+    function registerWorker() {
+        return navigator.serviceWorker
+            .getRegistration('./')
+            .then((swReg) => {
+                return (
+                    swReg ||
+                    navigator.serviceWorker.register('sw.js', { scope: './' })
+                )
+            })
+            .then((swReg) => {
+                const swRegTmp = swReg.installing || swReg.waiting
+                scope = swReg.scope
+                console.log('registering worker?')
+                return (
+                    (sw = swReg.active) ||
+                    new Promise((resolve) => {
+                        swRegTmp.addEventListener(
+                            'statechange',
+                            (fn = () => {
+                                if (swRegTmp.state === 'activated') {
+                                    swRegTmp.removeEventListener(
+                                        'statechange',
+                                        fn
+                                    )
+                                    sw = swReg.active
+                                    resolve()
+                                }
+                            })
+                        )
+                    })
+                )
+            })
+    }
+
+    const onMessage = (event) => {
+        console.log('message in worker.html: ', event)
+    }
+
+    if (navigator.serviceWorker) {
+        registerWorker().then(() => {
+            console.log('worker registered', messages)
+            window.onmessage = onMessage
+            messages.forEach(onMessage)
+        })
+    }
+</script>

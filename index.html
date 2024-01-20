@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <button onclick="onClick()">click me</button>
+        <script>
+            const onClick = () => {
+                const iframe = document.createElement('iframe')
+                iframe.src = './worker.html'
+                iframe.hidden = true
+
+                iframe.loaded = false
+                iframe.name = 'iframe'
+                iframe.isIframe = true
+                iframe.postMessage = (...args) =>
+                    iframe.contentWindow.postMessage(...args)
+                iframe.addEventListener(
+                    'load',
+                    () => {
+                        iframe.loaded = true
+                    },
+                    { once: true }
+                )
+                document.body.appendChild(iframe)
+                // return iframe
+                const channel = new MessageChannel()
+                const args = [{ h: 'h' }, '*', [channel.port2]]
+                console.log('posting message')
+                if (iframe.loaded) {
+                    iframe.postMessage(...args)
+                } else {
+                    iframe.addEventListener(
+                        'load',
+                        () => {
+                            iframe.postMessage(...args)
+                        },
+                        { once: true }
+                    )
+                }
+            }
+        </script>
+    </body>
+</html>
